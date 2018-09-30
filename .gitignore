@@ -10,12 +10,10 @@ __pycache__/
 # C extensions
 *.so
 
-# generated model files
-model-*.h5
-
-# train data
+# Related
 data/
 linux_sim/
+models/
 
 # Distribution / packaging
 .Python
