@@ -21,6 +21,12 @@ app = Flask(__name__)
 model = None
 prev_image_array = None
 
+# Control the speed of the vehicle
+# Credi:t https://github.com/naokishibuya/car-behavioral-cloning
+MIN_SPEED = 10
+MAX_SPEED = 25
+speed_limit = MAX_SPEED
+
 
 class SimplePIController:
     def __init__(self, Kp, Ki):
@@ -49,26 +55,34 @@ controller.set_desired(set_speed)
 
 
 @sio.on('telemetry')
-def telemetry(sid, data):
+def telemetry(sid, data, speed_control=False):
     if data:
         # The current steering angle of the car
         steering_angle = data["steering_angle"]
         # The current throttle of the car
         throttle = data["throttle"]
         # The current speed of the car
-        speed = data["speed"]
+        speed = float(data["speed"])
         # The current image from the center camera of the car
         imgString = data["image"]
         image = Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
+        
+        if speed_control:
+            global speed_limit
+            if speed > speed_limit:
+                speed_limit = MIN_SPEED  # Slow down
+            else:
+                speed_limit = MAX_SPEED
+            throttle_ops = 1.0 - steering_angle**2 - (speed/speed_limit)**2
+        else:
+            throttle = controller.update(speed)
 
-        throttle = controller.update(float(speed))
-
-        print(steering_angle, throttle)
+        print("Angle = {0}, Throttle = {1}, Speed = {2}".format(steering_angle, throttle, speed))
         send_control(steering_angle, throttle)
 
-        # save frame
+        # Save frame
         if args.image_folder != '':
             timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
             image_filename = os.path.join(args.image_folder, timestamp)
