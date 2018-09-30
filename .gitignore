@@ -15,6 +15,7 @@ data/
 linux_sim/
 models/
 output/
+*draft*
 
 # Distribution / packaging
 .Python
