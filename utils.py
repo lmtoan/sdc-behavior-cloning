@@ -156,7 +156,7 @@ def augment_pipeline(data_dir, data_row, steer_angle, **config):
     return image, steer_angle
 
 
-def batch_generator(data_dir, image_df, steering_df, batch_size, is_training=True, **augment_config):
+def batch_generator(data_dir, image_df, steering_df, is_training=True, **config):
     """Generate batch to load. 
     
     A generator is like a coroutine, a process that can run separately from another main routine. More memory efficient
@@ -172,6 +172,8 @@ def batch_generator(data_dir, image_df, steering_df, batch_size, is_training=Tru
         generator
     """
     
+    batch_size = config.get('batch_size', 64)
+    
     while 1:
         feats = np.zeros((batch_size, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS))
         responses = np.zeros((batch_size))
@@ -182,7 +184,7 @@ def batch_generator(data_dir, image_df, steering_df, batch_size, is_training=Tru
         
         for i, row in batch_image.iterrows():
             if is_training:
-                feats[i, :, :, :], responses[i] = augment_pipeline(data_dir, row, batch_steer[i], **augment_config)
+                feats[i, :, :, :], responses[i] = augment_pipeline(data_dir, row, batch_steer[i], **config)
             else:
                 feats[i, :, :, :] = process_image(load_image(data_dir, row[IMAGE_COLS[0]]))
                 responses[i] = float(batch_steer[i])

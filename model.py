@@ -1,11 +1,13 @@
+import json
+
+from utils import *
+
 from sklearn.model_selection import train_test_split
 
 from keras.models import Sequential # Import model class
 from keras.layers import Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten # Import layers
 from keras.optimizers import Adam # Import optimizer
 from keras.callbacks import ModelCheckpoint # Import checkpoint
-
-from utils import *
 
 
 def create_model():
@@ -34,15 +36,15 @@ def create_model():
     return model
 
 
-def train_model(model, optimizer, train_gen, val_gen, num_epoch=1, storage_path='models', verbose=True, **config_dict):
+def train_model(model, optimizer, train_gen, val_gen, storage_path='models', verbose=True, **config):
     """Perform training operations given defined model"""
     
     if not os.path.exists(storage_path):
         os.makedirs(storage_path)
         
     # Checkpoint
-    checkpoint = ModelCheckpoint(os.path.join(storage_path, '%s_{epoch:03d}.h5' %config_dict.get('model_name', str(time.time()))), monitor='val_loss',
-                                 save_best_only=config_dict.get('save_best_only', True), 
+    checkpoint = ModelCheckpoint(os.path.join(storage_path, '%s_{epoch:03d}.h5' %config.get('model_name', str(time.time()))), monitor='val_loss',
+                                 save_best_only=config.get('save_best_only', True), 
                                  verbose=int(verbose), mode='auto') # Auto infer min_loss or max_acc of val set
     
     if optimizer is None:
@@ -50,16 +52,16 @@ def train_model(model, optimizer, train_gen, val_gen, num_epoch=1, storage_path=
     else:
         model.compile(optimizer, loss='mse')
     
-    history = model.fit_generator(train_gen, steps_per_epoch=config_dict.get('train_steps', 50), epochs=num_epoch,
-                        validation_data=val_gen, validation_steps=config_dict.get('val_steps', 10),
-                        callbacks=[checkpoint], max_q_size=config_dict.get('max_queue_size', 10),
+    history = model.fit_generator(train_gen, steps_per_epoch=config.get('train_steps', 50), epochs=config.get('num_epoch', 1),
+                        validation_data=val_gen, validation_steps=config.get('val_steps', 10),
+                        callbacks=[checkpoint], max_q_size=config.get('max_queue_size', 10),
                         verbose=int(verbose),
-                        workers=config_dict.get('workers', 1), use_multiprocessing=config_dict.get('multi_processing', False))
+                        workers=config.get('workers', 1), use_multiprocessing=config.get('multi_processing', False))
     
     return history
 
 
-def main(data_dir, log_path, config_dict):
+def main(data_dir, log_path, config):
     """Main thread"""
     
     log_df = pd.read_csv(log_path)
@@ -68,29 +70,41 @@ def main(data_dir, log_path, config_dict):
     num_train = len(X_train)
     num_valid = len(X_valid)
     
-    print(num_train, num_valid)
+    print("Num_train = {0}. Num_valid = {1}".format(num_train, num_valid))
     
-    batch_size = config_dict.get('batch_size', 64)
-    if 'train_steps' not in config_dict:
-        config_dict['train_steps'] = num_train // batch_size
-    if 'val_steps' not in config_dict:
-        config_dict['val_steps'] = num_valid // batch_size
-    
-    print(batch_size)
+    if 'train_steps' not in config:
+        config['train_steps'] = num_train // config.get('batch_size', 64)
+    if 'val_steps' not in config:
+        config['val_steps'] = num_valid // config.get('batch_size', 64)
         
-    train_gen = batch_generator(data_dir, X_train, y_train, batch_size, is_training=True, **config_dict)
-    valid_gen = batch_generator(data_dir, X_valid, y_valid, batch_size, is_training=False, **config_dict)
+    train_gen = batch_generator(data_dir, X_train, y_train, is_training=True, **config)
+    valid_gen = batch_generator(data_dir, X_valid, y_valid, is_training=False, **config)
     
     model = create_model()
     
-    optimizer = Adam(lr=config_dict.get('lr', 0.001), decay=config_dict.get('decay', 0.01))
+    optimizer = Adam(lr=config.get('lr', 0.001), decay=config.get('decay', 0.01))
     
-    stat = train_model(model, optimizer, train_gen, valid_gen, num_epoch=config_dict.get('num_epoch', 5), **config_dict)
+    stat = train_model(model, optimizer, train_gen, valid_gen, **config)
     
+    return stat
 
 if __name__ == '__main__':
+    """ Main thread
+    
+    Usage: python model.py <json_config_path>
+    """
+    
+    if len(sys.argv) > 1:
+        try:
+            print("Reading config from %s" %sys.argv[1])
+            config_dict = json.load(sys.argv[1])
+        except:
+            raise Exception("Can't load json dictionary")
+    else:
+        config_dict = {'batch_size': 64, 'correction': 0.3, 'model_name': '0929_script', 'num_epoch': 2}
+
     data_dir = 'data/sample_data'
     log_path = os.path.join(data_dir, 'driving_log.csv')
-    config_dict = {'batch_size': 64, 'correction': 0.3, 'model_name': '0929_script', 'num_epoch': 2}
-    print("Ok...")
-    main(data_dir, log_path, config_dict)
+    
+    print("Proceed...")
+    _ = main(data_dir, log_path, config_dict)
