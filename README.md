@@ -14,7 +14,11 @@ Structure
 * `model.h5` (a trained Keras model)
 * `vid/final.mp4` (a video of vehicle driving autonomously around the track for at least one full lap)
 
-Credit to the Udacity team for the resources. Probably 
+Credit to the Udacity team for the resources. Probably the best project of all.
+
+Usage
+---
+Run `python model.py config.json`. An example of `config.json` might contain `{'batch_size': 64, 'correction': 0.2, 'model_name': 'model_sdc', 'num_epoch': 10, 'train_steps': 200, 'val_steps': 50}`
 
 Preprocessing
 ---
