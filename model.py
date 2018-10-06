@@ -20,15 +20,16 @@ def create_model():
     # Neuron layers sequence: (3, 24, 36, 48, 64)
     model = Sequential()
     model.add(Lambda(lambda x: x/127.5 - 1.0, input_shape=INPUT_SHAPE, name='Normalization')) # Standardize, no need for sklearn Standardizer?
-    model.add(Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='Conv_L1')) 
-    model.add(Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='Conv_L2'))
-    model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='relu', name='Conv_L3'))
-    model.add(Conv2D(filters=64, kernel_size=(5, 5), strides=(1, 1), activation='relu', name='Conv_L4')) # Reduce stride to have more fine-grain detail
+    model.add(Conv2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='elu', name='Conv_L1')) 
+    model.add(Conv2D(filters=36, kernel_size=(5, 5), strides=(2, 2), activation='elu', name='Conv_L2'))
+    model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation='elu', name='Conv_L3'))
+    model.add(Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), activation='elu', name='Conv_L4')) # Reduce stride to have more fine-grain detail
+    model.add(Conv2D(filters=64, kernel_size=(3, 3), strides=(1, 1), activation='elu', name='Conv_L5'))
     model.add(Dropout(rate=0.5, name='Dropout_L1'))
     model.add(Flatten(name='Flatten')) # Fully-connected layers
-    model.add(Dense(units=100, activation='relu', name='Dense_L1'))
-    model.add(Dense(units=50, activation='relu', name='Dense_L2'))
-    model.add(Dense(units=10, activation='relu', name='Dense_L3'))
+    model.add(Dense(units=100, activation='elu', name='Dense_L1'))
+    model.add(Dense(units=50, activation='elu', name='Dense_L2'))
+    model.add(Dense(units=10, activation='elu', name='Dense_L3'))
     model.add(Dense(units=1, name='Dense_L4'))
     
     print(model.summary())
@@ -77,12 +78,12 @@ def main(data_dir, log_path, config):
     if 'val_steps' not in config:
         config['val_steps'] = num_valid // config.get('batch_size', 64)
         
-    train_gen = batch_generator(data_dir, X_train, y_train, is_training=True, **config)
+    train_gen = batch_generator(data_dir, X_train, y_train, is_training=False, **config)
     valid_gen = batch_generator(data_dir, X_valid, y_valid, is_training=False, **config)
     
     model = create_model()
     
-    optimizer = Adam(lr=config.get('lr', 0.001), decay=config.get('decay', 0.01))
+    optimizer = Adam(lr=config.get('lr', 0.0001), decay=config.get('decay', 0.01))
     
     stat = train_model(model, optimizer, train_gen, valid_gen, **config)
     
@@ -101,9 +102,10 @@ if __name__ == '__main__':
         except:
             raise Exception("Can't load json dictionary")
     else:
-        config_dict = {'batch_size': 64, 'correction': 0.3, 'model_name': '0929_script', 'num_epoch': 2}
+        config_dict = {'batch_size': 64, 'correction': 0.2, 'model_name': '1005_smooth', 'num_epoch': 10, 
+        'train_steps': 200}
 
-    data_dir = 'data/sample_data'
+    data_dir = 'data/0930_data_smooth'
     log_path = os.path.join(data_dir, 'driving_log.csv')
     
     print("Proceed...")
