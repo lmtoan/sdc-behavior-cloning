@@ -109,7 +109,7 @@ The later epoch tends to have better performance because the training set might 
 
 ### 1) [Early Epoch Video](vid/early.mp4)
 
-As shown, the car could not make the first turn and end up on the grass.
+As shown, the car could not make the first turn and ended up on the grass.
 
 ![crash](figs/early.jpg)
 
