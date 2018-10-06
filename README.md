@@ -7,6 +7,8 @@ Overview
 This repository contains files for the Behavioral Cloning Project
 which demonstrates the power of deep neural networks and convolutional neural networks to clone driving behavior. Keras was used to train, validate and test an optimal driving model. The model will output a steering angle to an autonomous vehicle.
 
+![](https://media.giphy.com/media/NmyyP3bTZRCnlpiUFQ/giphy.gif)
+
 Structure
 * `model.py` (script used to create and train the model)
 * `utils.py` (script used to support model.py)
