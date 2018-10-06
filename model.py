@@ -37,9 +37,10 @@ def create_model():
     return model
 
 
-def train_model(model, optimizer, train_gen, val_gen, storage_path='models', verbose=True, **config):
+def train_model(model, optimizer, train_gen, val_gen, verbose=True, **config):
     """Perform training operations given defined model"""
     
+    storage_path = config.get('model_dir', 'models')
     if not os.path.exists(storage_path):
         os.makedirs(storage_path)
         
@@ -77,34 +78,54 @@ def main(data_dir, log_path, config):
         config['train_steps'] = num_train // config.get('batch_size', 64)
     if 'val_steps' not in config:
         config['val_steps'] = num_valid // config.get('batch_size', 64)
-        
-    train_gen = batch_generator(data_dir, X_train, y_train, is_training=True, **config)
+    
+    augment_pipeline = config.get('augment_pipeline', False)
+    if augment_pipeline:
+        train_gen = batch_generator(data_dir, X_train, y_train, is_training=True, **config)
+    else:
+        train_gen = batch_generator(data_dir, X_train, y_train, is_training=False, **config)
+
     valid_gen = batch_generator(data_dir, X_valid, y_valid, is_training=False, **config)
     
     model = create_model()
     
-    optimizer = Adam(lr=config.get('lr', 0.0001), decay=config.get('decay', 0.01))
+    optimizer = Adam(lr=config.get('lr', 0.0001))
     
     stat = train_model(model, optimizer, train_gen, valid_gen, **config)
     
     return stat
+
 
 if __name__ == '__main__':
     """ Main thread
     
     Usage: python model.py <json_config_path>
     """
-    if len(sys.argv) > 1:
+    
+    if len(sys.argv) < 2:
+        raise Exception("Please enter either config.json, 1, or 0")
+
+    if '.json' in sys.argv[1]:
         try:
             print("Reading config from %s" %sys.argv[1])
             config_dict = json.load(sys.argv[1])
         except:
             raise Exception("Can't load json dictionary")
+    elif sys.argv[1] == '1':
+        config_dict = {
+            'data': 'data/0929_data', 'augment_pipeline': True, 'model_dir': 'models',
+            'batch_size': 64, 'correction': 0.2, 'model_name': '1006_0929_augment', 'num_epoch': 20, 
+            'train_steps': 2000, 'val_steps': 50, 'save_best_only': False
+        }
     else:
-        config_dict = {'batch_size': 64, 'correction': 0.2, 'model_name': '1005_old_0929_data_combine_augment', 'num_epoch': 10, 
-        'train_steps': 200, 'val_steps': 50}
+        config_dict = {
+            'data': 'data/0929_data', 'augment_pipeline': False, 'model_dir': 'models',
+            'batch_size': 64, 'correction': 0.2, 'model_name': '1006_0929_no_augment', 'num_epoch': 20, 
+            'train_steps': 2000, 'val_steps': 50, 'save_best_only': False
+        }
 
-    data_dir = 'data/0929_data'
+    print(config_dict)
+    data_dir = config_dict['data']
     log_path = os.path.join(data_dir, 'driving_log.csv')
     
     print("Proceed...")

@@ -18,7 +18,26 @@ Credit to the Udacity team for the resources. Probably the best project of all.
 
 Usage
 ---
-Run `python model.py config.json`. An example of `config.json` might contain `{'batch_size': 64, 'correction': 0.2, 'model_name': 'model_sdc', 'num_epoch': 10, 'train_steps': 200, 'val_steps': 50}`
+
+1. Download the simulator from Udacity: [https://github.com/udacity/self-driving-car-sim](https://github.com/udacity/self-driving-car-sim)
+
+2. Install the following dependencies according to [Udacity Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit). 
+**Note: upgrade to Keras 2.1.5**
+
+3. Drive the car using the pretrained model. Run `python drive.py final_model.h5`
+
+4. To train a model
+* Collect the data using the simulator and specify in the json config with key `'data'`
+* Run `python model.py config.json`. 
+* An example of `config.json` might contain:
+
+```python
+config_dict = {
+    'data': 'data/0929_data', 'augment_pipeline': True, 'model_dir': 'models',
+    'batch_size': 64, 'correction': 0.2, 'model_name': '1006_0929_augment', 'num_epoch': 20, 
+    'train_steps': 2000, 'val_steps': 50, 'save_best_only': False
+}
+```
 
 Preprocessing
 ---
@@ -81,6 +100,10 @@ Train
 Below is the model parameters summarized by Keras `model.summary()`. This is based on the [Nvidia model](https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/) that has been successful in self-driving tests. There are 252,219 weights parameters to train.
 
 Layer types:
+* Lambda layer: to normalize the YUV image arrays
+```python
+model.add(Lambda(lambda x: x/127.5 - 1.0, input_shape=INPUT_SHAPE, name='Normalization'))
+```
 * Convolution layers: capture the image context and spatial dimensions. The activation function used was `elu`
 * Dropout layer: set the probability at 0.5 to reduce overfitting
 * Fully-connected layers: set for the final few layers to compute loss
@@ -91,7 +114,8 @@ Layer types:
 
 A few training features were used
 
-* Train/validation split: standard 80-20 
+* Train/validation split: standard 80-20
+* Loss function: set to MSE because we want to predict the continous steering angle
 * Adam optimizer: default LR to be 0.0001 and decay rate to be 0.01 as declared in Keras 
 ``` python 
 Adam(lr=config.get('lr', 0.0001), decay=config.get('decay', 0.01))
@@ -107,8 +131,14 @@ Adam(lr=config.get('lr', 0.0001), decay=config.get('decay', 0.01))
 Result
 ---
 Observations:
-* Reduction in validation loss does not translate to better autonomous driving. Because of that, callbacks need to be set for every single epoch.
-The later epoch tends to have better performance because the training set might have been shuffled to difficult turns.
+* Reduction in validation MSE loss does not translate to better autonomous driving. Because of that, callbacks need to be set for every single epoch.
+* The later epoch tends to have better performance because the training set might have been shuffled to difficult turns.
+* The Nvidia model is a relatively simple network. The key for success is collecting diverse training data where the car makes a lot of recovery turns.
+* More heavy-lifting models should be used with caution.
+
+Training screenshot:
+
+![training](figs/augment.png)
 
 
 ### 1) [Early Epoch Video](vid/early.mp4)
@@ -126,7 +156,7 @@ particular segment might have not been shown to the model.
 
 ### 3) [Late/Final Epoch Video](vid/final.mp4)
 
-As shown, the car completed the track and final video is in `vid/final.mp4`
+As shown, the car completed the track and final video is in `vid/final.mp4`.
 
 ![smooth](figs/smooth.jpg)
 
