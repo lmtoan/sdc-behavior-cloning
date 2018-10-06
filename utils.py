@@ -143,14 +143,15 @@ def choose_adjust(data_dir, data_row, steer_angle, **config):
         return load_image(data_dir, data_row[IMAGE_COLS[choice]]), steer_angle - config.get('steer_corr', 0.2)
 
 
-def augment_pipeline(data_dir, data_row, steer_angle, **config):
+def image_pipeline(data_dir, data_row, steer_angle, augment=True, **config):
     """Create random image augmentation for training"""
     
     image, steer_angle = choose_adjust(data_dir, data_row, steer_angle, **config)
-    image, steer_angle = random_flip(image, steer_angle, **config)
-    image, steer_angle = random_translate(image, steer_angle, **config)
-    image = random_shadow(image, **config)
-    image = random_brightness(image, **config)
+    if augment:
+        image, steer_angle = random_flip(image, steer_angle, **config)
+        image, steer_angle = random_translate(image, steer_angle, **config)
+        image = random_shadow(image, **config)
+        image = random_brightness(image, **config)
     image = process_image(image) # Standard
     
     return image, steer_angle
@@ -184,9 +185,8 @@ def batch_generator(data_dir, image_df, steering_df, is_training=True, **config)
         
         for i, row in batch_image.iterrows():
             if is_training:
-                feats[i, :, :, :], responses[i] = augment_pipeline(data_dir, row, batch_steer[i], **config)
+                feats[i, :, :, :], responses[i] = image_pipeline(data_dir, row, batch_steer[i], augment=True, **config)
             else:
-                feats[i, :, :, :] = process_image(load_image(data_dir, row[IMAGE_COLS[0]]))
-                responses[i] = float(batch_steer[i])
-
+                feats[i, :, :, :], responses[i] = image_pipeline(data_dir, row, batch_steer[i], augment=False, **config)
+                
         yield feats, responses

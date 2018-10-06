@@ -55,7 +55,7 @@ def train_model(model, optimizer, train_gen, val_gen, storage_path='models', ver
     
     history = model.fit_generator(train_gen, steps_per_epoch=config.get('train_steps', 50), epochs=config.get('num_epoch', 1),
                         validation_data=val_gen, validation_steps=config.get('val_steps', 10),
-                        callbacks=[checkpoint], max_q_size=config.get('max_queue_size', 10),
+                        callbacks=[checkpoint], max_queue_size=config.get('max_queue_size', 10),
                         verbose=int(verbose),
                         workers=config.get('workers', 1), use_multiprocessing=config.get('multi_processing', False))
     
@@ -67,7 +67,7 @@ def main(data_dir, log_path, config):
     
     log_df = pd.read_csv(log_path)
     
-    X_train, X_valid, y_train, y_valid = train_test_split(log_df.loc[:, IMAGE_COLS], log_df.loc[:, STEER_COLS])
+    X_train, X_valid, y_train, y_valid = train_test_split(log_df.loc[:, IMAGE_COLS], log_df.loc[:, STEER_COLS], test_size=0.2)
     num_train = len(X_train)
     num_valid = len(X_valid)
     
@@ -78,7 +78,7 @@ def main(data_dir, log_path, config):
     if 'val_steps' not in config:
         config['val_steps'] = num_valid // config.get('batch_size', 64)
         
-    train_gen = batch_generator(data_dir, X_train, y_train, is_training=False, **config)
+    train_gen = batch_generator(data_dir, X_train, y_train, is_training=True, **config)
     valid_gen = batch_generator(data_dir, X_valid, y_valid, is_training=False, **config)
     
     model = create_model()
@@ -94,7 +94,6 @@ if __name__ == '__main__':
     
     Usage: python model.py <json_config_path>
     """
-    
     if len(sys.argv) > 1:
         try:
             print("Reading config from %s" %sys.argv[1])
@@ -102,10 +101,10 @@ if __name__ == '__main__':
         except:
             raise Exception("Can't load json dictionary")
     else:
-        config_dict = {'batch_size': 64, 'correction': 0.2, 'model_name': '1005_smooth', 'num_epoch': 10, 
-        'train_steps': 200}
+        config_dict = {'batch_size': 64, 'correction': 0.2, 'model_name': '1005_combine_augment', 'num_epoch': 10, 
+        'train_steps': 200, 'val_steps': 50}
 
-    data_dir = 'data/0930_data_smooth'
+    data_dir = 'data/1005_data'
     log_path = os.path.join(data_dir, 'driving_log.csv')
     
     print("Proceed...")
