@@ -6,7 +6,7 @@ import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 160, 320, 3
+IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 IMAGE_COLS = ('center', 'left', 'right')
 STEER_COLS = ('steering')
@@ -147,12 +147,13 @@ def image_pipeline(data_dir, data_row, steer_angle, augment=True, **config):
     """Create random image augmentation for training"""
     
     image, steer_angle = choose_adjust(data_dir, data_row, steer_angle, **config)
+    image = process_image(image) # Standard
+    
     if augment:
         image, steer_angle = random_flip(image, steer_angle, **config)
         image, steer_angle = random_translate(image, steer_angle, **config)
         image = random_shadow(image, **config)
         image = random_brightness(image, **config)
-    image = process_image(image) # Standard
     
     return image, steer_angle
 

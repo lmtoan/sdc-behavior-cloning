@@ -101,10 +101,10 @@ if __name__ == '__main__':
         except:
             raise Exception("Can't load json dictionary")
     else:
-        config_dict = {'batch_size': 64, 'correction': 0.2, 'model_name': '1005_combine_augment', 'num_epoch': 10, 
+        config_dict = {'batch_size': 64, 'correction': 0.2, 'model_name': '1005_old_0929_data_combine_augment', 'num_epoch': 10, 
         'train_steps': 200, 'val_steps': 50}
 
-    data_dir = 'data/1005_data'
+    data_dir = 'data/0929_data'
     log_path = os.path.join(data_dir, 'driving_log.csv')
     
     print("Proceed...")
